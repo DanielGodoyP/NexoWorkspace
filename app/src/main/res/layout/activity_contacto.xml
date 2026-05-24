@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    android:background="#F5F5F5">
+
+    <LinearLayout
+        android:id="@+id/headerContacto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_alignParentTop="true"
+        android:padding="24dp">
+
+        <ImageView
+            android:id="@+id/ivVolverContacto"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_baseline_arrow_back_24"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            app:tint="#333333"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Soporte y Contacto"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginStart="16dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/footerContacto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_alignParentBottom="true"
+        android:paddingHorizontal="24dp"
+        android:paddingBottom="32dp"
+        android:paddingTop="16dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAbrirGmail"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:text="✉️ ENVIAR POR GMAIL"
+            android:backgroundTint="#D93025"
+            android:textSize="16sp"
+            app:cornerRadius="12dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="O llámanos al: 690 773 398"
+            android:textAlignment="center"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginTop="16dp"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_below="@id/headerContacto"
+        android:layout_above="@id/footerContacto"
+        android:paddingHorizontal="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="¿Necesitas ayuda?"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#1A73E8"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Escríbenos directamente y nuestro equipo te responderá lo antes posible al correo de tu cuenta."
+            android:textSize="14sp"
+            android:textColor="#666666"
+            android:layout_marginBottom="24dp"/>
+
+        <EditText
+            android:id="@+id/etAsuntoContacto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Asunto (Ej: Problema con reserva)"
+            android:inputType="text"
+            android:layout_marginBottom="16dp"
+            android:minHeight="48dp"/>
+
+        <EditText
+            android:id="@+id/etMensajeContacto"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:hint="Escribe tu mensaje aquí..."
+            android:gravity="top|start"
+            android:inputType="textMultiLine"
+            android:background="@android:color/white"
+            android:padding="12dp"/>
+    </LinearLayout>
+
+</RelativeLayout>
