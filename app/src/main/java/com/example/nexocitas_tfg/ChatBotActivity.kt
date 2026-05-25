@@ -40,13 +40,28 @@ class ChatbotActivity : AppCompatActivity() {
     }
 
     private fun procesarMensajeLibre(mensaje: String) {
-        val input = Normalizer.normalize(mensaje.lowercase(), Normalizer.Form.NFD)
+        // 1. LIMPIEZA EXTREMA DEL TEXTO
+        var input = Normalizer.normalize(mensaje.lowercase(), Normalizer.Form.NFD)
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+        input = input.replace(Regex("[¿?¡!,.]"), "").trim()
+
+        // 2. FUNCIONES LOCALES (CORREGIDAS PARA KOTLIN)
+        fun contieneAlguna(vararg palabras: String): Boolean {
+            return palabras.any { input.contains(it) }
+        }
+
+        fun noContiene(vararg palabras: String): Boolean {
+            return palabras.none { input.contains(it) }
+        }
 
         contenedor.postDelayed({
             val respuesta = when {
-                // ========== CÓMO HACER UNA RESERVA ==========
-                input.contains("como edito") || input.contains("como puedo editar") || input.contains("editar reserva") || input.contains("cambiar reserva") || input.contains("modificar reserva") ->
+
+                // ========== CÓMO EDITAR ==========
+                (contieneAlguna("edit", "modific", "cambiar", "actualiz", "mover", "aplazar") &&
+                        contieneAlguna("reserv", "cita", "hora", "fecha", "sala", "dia")) ||
+                        (contieneAlguna("equivocad", "mal") && contieneAlguna("hora", "fecha", "sala", "dia")) ||
+                        contieneAlguna("cambio de sala") ->
                     "✏️ CÓMO EDITAR UNA RESERVA - PASO A PASO:\n\n" +
                             "1️⃣ ABRE LA APP EN LA PESTAÑA \"MIS RESERVAS\"\n" +
                             "2️⃣ SELECCIONA LA RESERVA QUE QUIERES EDITAR\n" +
@@ -60,7 +75,10 @@ class ChatbotActivity : AppCompatActivity() {
                             "6️⃣ CONFIRMA LOS CAMBIOS\n\n" +
                             "💡 IMPORTANTE: Solo puedes editar reservas futuras, no las pasadas."
 
-                input.contains("como borro") || input.contains("borrar reserva") || input.contains("cancelar reserva") || input.contains("como cancelo") ->
+                // ========== CÓMO BORRAR/CANCELAR ==========
+                (contieneAlguna("cancel", "borr", "elimin", "anul", "quit", "deshacer") &&
+                        contieneAlguna("reserv", "cita", "sala")) ||
+                        contieneAlguna("no quiero la", "no puedo ir", "como se cancela", "no asistire") ->
                     "🗑️ CÓMO BORRAR/CANCELAR UNA RESERVA:\n\n" +
                             "1️⃣ VE A LA PESTAÑA \"MIS RESERVAS\"\n" +
                             "2️⃣ SELECCIONA LA RESERVA A CANCELAR\n" +
@@ -71,7 +89,34 @@ class ChatbotActivity : AppCompatActivity() {
                             "⏱️ TIEMPO: Se procesa inmediatamente.\n\n" +
                             "💡 No admitimos devoluciones. Usa esta opción si necesitas cancelar."
 
-                input.contains("como hago una reserva") || input.contains("como reservo") || input.contains("paso a paso") || input.contains("pasos para reservar") ->
+                // ========== MIS RESERVAS / HISTORIAL ==========
+                contieneAlguna("mis reserv", "historial") ||
+                        (contieneAlguna("donde", "ver", "buscar", "estado") && contieneAlguna("reserv", "cita", "estan mis")) ->
+                    "📋 PESTAÑA 'MIS RESERVAS':\n\n" +
+                            "📍 CÓMO ACCEDER:\n" +
+                            "1. En el menú inferior, pulsa 'Mis Reservas'\n" +
+                            "2. Verás todas tus reservas\n\n" +
+                            "📊 QUÉ VES:\n" +
+                            "✅ Lista de TODAS tus reservas\n" +
+                            "✅ Estado de cada una\n" +
+                            "✅ Sala reservada\n" +
+                            "✅ Fecha y hora\n" +
+                            "✅ Precio\n" +
+                            "✅ Extras añadidos\n\n" +
+                            "🎯 BOTONES DISPONIBLES:\n" +
+                            "✏️ EDITAR: Cambia fecha, hora, sala, extras\n" +
+                            "🗑️ BORRAR: Cancela la reserva\n\n" +
+                            "📱 CÓDIGO QR:\n" +
+                            "10 minutos ANTES de tu reserva, aparecerá el código QR para validar tu cita.\n\n" +
+                            "💡 INFORMACIÓN DETALLADA:\n" +
+                            "• Pulsa en cualquier reserva para ver todos los detalles\n" +
+                            "• Descarga factura desde aquí"
+
+                // ========== CÓMO HACER UNA RESERVA (Súper flexible) ==========
+                (contieneAlguna("reserv", "cita", "sala", "espacio") &&
+                        contieneAlguna("hacer", "crear", "como", "quiero", "puedo", "necesito", "pedir", "coger", "agendar", "alquilar", "nueva")) &&
+                        noContiene("cancel", "borr", "edit", "modific", "mis reserv") ||
+                        contieneAlguna("como alquilar", "hacen las reservas", "se hace una reserva") ->
                     "📋 CÓMO HACER UNA RESERVA - PASO A PASO:\n\n" +
                             "1️⃣ ABRE LA APP EN LA PESTAÑA PRINCIPAL\n" +
                             "Verás todas las salas disponibles con sus tarjetas visuales.\n\n" +
@@ -90,7 +135,9 @@ class ChatbotActivity : AppCompatActivity() {
                             "8️⃣ ¡LISTO!\n" +
                             "Tu reserva está confirmada y la verás en 'Mis Reservas'."
 
-                input.contains("qr") || input.contains("codigo qr") || input.contains("validar llegada") || input.contains("como accedo") ->
+                // ========== CÓDIGO QR / ACCESO ==========
+                contieneAlguna("qr", "codigo") ||
+                        (contieneAlguna("como", "donde", "para") && contieneAlguna("acced", "entra", "llegad", "puerta", "pasar", "validar")) ->
                     "📱 CÓDIGO QR - VALIDAR TU CITA:\n\n" +
                             "🎯 ¿CÓMO FUNCIONA?\n" +
                             "Cuando haces una reserva, el sistema genera un código QR único para acceder.\n\n" +
@@ -107,7 +154,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "Si no validas el QR a tiempo, tu reserva se cancelará automáticamente y será marcada como 'no-show' (no asistencia). En ese caso, se cobrará el 100% de la reserva.\n\n" +
                             "💡 El QR es personal e intransferible."
 
-                input.contains("no asisti") || input.contains("no-show") || input.contains("no fui") || input.contains("no me presento") ->
+                // ========== NO ASISTENCIA (NO-SHOW) ==========
+                contieneAlguna("no asisti", "no show", "no fui", "no me presento", "no voy a ir", "no llego", "falta", "se me ha pasado") ->
                     "⚠️ POLÍTICA DE NO-SHOW (NO ASISTENCIA):\n\n" +
                             "Si hiciste una reserva pero no asistes:\n\n" +
                             "❌ QUÉ OCURRE:\n" +
@@ -122,26 +170,9 @@ class ChatbotActivity : AppCompatActivity() {
                             "• La cancelación es la única forma de no ser cobrado\n\n" +
                             "💡 Recuerda: El QR aparece 10 minutos antes. Prepárate a tiempo."
 
-                // ========== INFORMACIÓN DE SALAS ==========
-                input.contains("que salas hay") || input.contains("que espacios") || input.contains("cuales son las salas") || input.contains("informacion salas") ->
-                    "🏢 SALAS DISPONIBLES EN NEXOWORKSPACE:\n\n" +
-                            "Tenemos varios espacios completamente equipados:\n\n" +
-                            "📚 AULAS\n" +
-                            "Espacios amplios para formaciones y talleres.\n" +
-                            "Capacidad para múltiples personas.\n" +
-                            "Equipadas con proyectores, pizarras y sistemas audiovisuales.\n\n" +
-                            "🎓 ESTUDIOS\n" +
-                            "Espacios medianos para pequeños grupos de trabajo colaborativo.\n" +
-                            "Mesas amplias y buena iluminación.\n\n" +
-                            "🏢 SALAS DE REUNIONES\n" +
-                            "Espacios profesionales para presentaciones y reuniones con clientes.\n" +
-                            "Equipadas con pantallas interactivas.\n\n" +
-                            "📝 ESCRITORIOS\n" +
-                            "Espacios individuales con toda la conexión para trabajo concentrado.\n\n" +
-                            "✨ TODAS INCLUYEN:\n" +
-                            "WiFi alta velocidad, enchufes, climatización y mobiliario ergonómico."
-
-                input.contains("que incluye") || input.contains("que tiene la sala") || input.contains("equipamiento") || input.contains("que trae") ->
+                // ========== EQUIPAMIENTO/INCLUYE ==========
+                contieneAlguna("incluy", "trae", "proyector", "pizarra", "wifi", "internet", "pantalla", "ordenador", "equipamient") ||
+                        (contieneAlguna("que", "como") && contieneAlguna("tiene", "dentro de la sala")) ->
                     "✨ EQUIPAMIENTO INCLUIDO EN TODAS LAS SALAS:\n\n" +
                             "✅ WiFi DE ALTA VELOCIDAD\n" +
                             "Conexión ultrarrápida para videoconferencias, streaming y trabajo en la nube.\n\n" +
@@ -158,7 +189,27 @@ class ChatbotActivity : AppCompatActivity() {
                             "✅ PIZARRAS Y ROTULADORES\n" +
                             "Para brainstorming y presentaciones."
 
-                input.contains("extras") || input.contains("servicios adicionales") || input.contains("que puedo añadir") ->
+                // ========== SALAS (Tipos y opciones) ==========
+                contieneAlguna("que salas", "que espacios", "tipos de sala", "opciones de sala", "cuales son las salas", "informacion salas", "aula", "estudio", "cabina") ->
+                    "🏢 SALAS DISPONIBLES EN NEXOWORKSPACE:\n\n" +
+                            "Tenemos varios espacios completamente equipados:\n\n" +
+                            "📚 AULAS\n" +
+                            "Espacios amplios para formaciones y talleres.\n" +
+                            "Capacidad para múltiples personas.\n" +
+                            "Equipadas con proyectores, pizarras y sistemas audiovisuales.\n\n" +
+                            "🎓 ESTUDIOS\n" +
+                            "Espacios medianos para pequeños grupos de trabajo colaborativo.\n" +
+                            "Mesas amplias y buena iluminación.\n\n" +
+                            "🏢 SALAS DE REUNIONES\n" +
+                            "Espacios profesionales para presentaciones y reuniones con clientes.\n" +
+                            "Equipadas con pantallas interactivas.\n\n" +
+                            "📝 ESCRITORIOS / CABINAS\n" +
+                            "Espacios individuales con toda la conexión para trabajo concentrado y llamadas privadas.\n\n" +
+                            "✨ TODAS INCLUYEN:\n" +
+                            "WiFi alta velocidad, enchufes, climatización y mobiliario ergonómico."
+
+                // ========== EXTRAS ==========
+                contieneAlguna("extra", "adicional", "catering", "cafe", "bebida", "comida", "añadir") ->
                     "⭐ SERVICIOS EXTRAS DISPONIBLES:\n\n" +
                             "Al hacer tu reserva, puedes añadir servicios adicionales que sumarán al precio total:\n\n" +
                             "📱 OPCIÓN 1: Equipamiento multimedia extra\n" +
@@ -173,8 +224,9 @@ class ChatbotActivity : AppCompatActivity() {
                             "📞 PARA MÁS OPCIONES:\n" +
                             "nexoworkspace@gmail.com o 690 773 398"
 
-                // ========== HORARIO Y UBICACIÓN ==========
-                input.contains("horario") || input.contains("que horas") || input.contains("cuando abren") || input.contains("cuando estan abiertos") || input.contains("de que hora a que hora") ->
+                // ========== HORARIO ==========
+                contieneAlguna("horario", "horas", "abren", "abris", "abierto", "cierra", "cierre", "apertura") ||
+                        (contieneAlguna("a que", "de que", "cuando") && contieneAlguna("hora")) ->
                     "🕐 HORARIO DE OPERACIÓN:\n\n" +
                             "⏰ HORAS:\n" +
                             "• De lunes a viernes\n" +
@@ -187,7 +239,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "Cualquier hora dentro del horario operativo (8:00-22:00) de lunes a viernes.\n\n" +
                             "📞 Excepciones especiales: 690 773 398"
 
-                input.contains("donde estais") || input.contains("ubicacion") || input.contains("donde os puedo encontrar") || input.contains("leganes") || input.contains("direccion") ->
+                // ========== UBICACIÓN ==========
+                contieneAlguna("ubicacion", "donde estais", "leganes", "direccion", "llegar", "mapa", "donde es", "donde esta", "donde os puedo encontrar") ->
                     "📍 UBICACIÓN:\n\n" +
                             "NexoWorkspace está ubicado en Leganés, Madrid.\n\n" +
                             "🚗 ACCESO:\n" +
@@ -200,8 +253,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "o escribe a: nexoworkspace@gmail.com\n\n" +
                             "Nuestro equipo te facilitará horarios exactos de visita y detalles de acceso."
 
-                // ========== PAGOS Y PRECIOS ==========
-                input.contains("cuanto cuesta") || input.contains("precio") || input.contains("tarifa") || input.contains("coste") || input.contains("cuanto vale") ->
+                // ========== PAGOS / PRECIOS ==========
+                contieneAlguna("precio", "cuest", "tarif", "cost", "vale", "dinero") && noContiene("pago", "pagar", "tarjet", "efectivo") ->
                     "💰 PRECIOS EN NEXOWORKSPACE:\n\n" +
                             "El coste depende de dos factores:\n\n" +
                             "1️⃣ SALA SELECCIONADA\n" +
@@ -217,7 +270,7 @@ class ChatbotActivity : AppCompatActivity() {
                             "Antes de confirmar, el sistema te muestra el desglose completo.\n\n" +
                             "No hay sorpresas. Todo transparente."
 
-                input.contains("como pago") || input.contains("pagar") || input.contains("metodo de pago") || input.contains("tarjeta") ->
+                contieneAlguna("pago", "pagar", "metodo de pago", "tarjet", "efectivo", "bizum", "cobro") ->
                     "💳 CÓMO PAGAR TU RESERVA:\n\n" +
                             "1️⃣ REVISA EL RESUMEN\n" +
                             "Verifica todos los detalles: sala, fecha, hora, extras y precio total.\n\n" +
@@ -235,7 +288,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "¡Listo! Tu reserva se procesa.\n\n" +
                             "🔒 En producción, todo cifrado y 100% seguro."
 
-                input.contains("reembolso") || input.contains("devolucion") || input.contains("dinero devuelto") || input.contains("me devuelven") || input.contains("admitimos devoluciones") ->
+                // ========== DEVOLUCIONES ==========
+                contieneAlguna("reembols", "devolucion", "devuel", "recuper", "devolver") ->
                     "❌ POLÍTICA DE REEMBOLSOS/DEVOLUCIONES:\n\n" +
                             "NO ADMITIMOS DEVOLUCIONES.\n\n" +
                             "En su lugar, tienes la opción de CANCELAR tu reserva:\n\n" +
@@ -252,7 +306,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "Si NO cancelas y NO validas el QR, se cobrará el 100% (no-show).\n\n" +
                             "💡 Cancela si no puedes ir. Es la opción más rápida."
 
-                input.contains("factura") || input.contains("recibo") || input.contains("como descargo") ->
+                // ========== FACTURAS ==========
+                contieneAlguna("factur", "recibo", "comprobante", "justificante", "descargo") ->
                     "📄 FACTURAS:\n\n" +
                             "Cada reserva genera automáticamente una factura:\n\n" +
                             "✅ QUÉ INCLUYE:\n" +
@@ -271,8 +326,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "📧 TAMBIÉN LA RECIBES:\n" +
                             "Por correo electrónico registrado."
 
-                // ========== PERFIL Y CUENTA ==========
-                input.contains("cerrar sesion") || input.contains("logout") || input.contains("desconectar") || input.contains("como cierro sesion") ->
+                // ========== CERRAR SESIÓN ==========
+                contieneAlguna("cerrar sesion", "logout", "desconectar", "salir de la cuenta", "cerrar cuenta") ->
                     "🚪 CÓMO CERRAR SESIÓN:\n\n" +
                             "1️⃣ ABRE LA PESTAÑA \"PERFIL\"\n" +
                             "En el menú inferior.\n\n" +
@@ -290,25 +345,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "🔒 POR SEGURIDAD:\n" +
                             "Siempre cierra sesión en dispositivos compartidos."
 
-                input.contains("mi perfil") || input.contains("datos personales") || input.contains("numero de telefono") || input.contains("email") || input.contains("nombre de usuario") ->
-                    "👤 TUS DATOS PERSONALES EN PERFIL:\n\n" +
-                            "📝 INFORMACIÓN QUE TENEMOS:\n" +
-                            "✅ Nombre de usuario\n" +
-                            "✅ Correo electrónico\n" +
-                            "✅ Número de teléfono\n" +
-                            "✅ Historial de reservas\n" +
-                            "✅ Información de pago\n\n" +
-                            "✏️ CÓMO ACTUALIZAR:\n" +
-                            "1. Ve a 'Perfil'\n" +
-                            "2. Busca opción de editar datos\n" +
-                            "3. Cambia lo que necesites\n" +
-                            "4. Guarda cambios\n\n" +
-                            "🔐 SEGURIDAD:\n" +
-                            "• Tus datos están encriptados\n" +
-                            "• No los compartimos sin tu consentimiento\n" +
-                            "• Cumplimos RGPD completo"
-
-                input.contains("contraseña") || input.contains("password") || input.contains("olvidé contraseña") || input.contains("recuperar contraseña") ->
+                // ========== CONTRASEÑA ==========
+                contieneAlguna("contraseña", "password", "clave", "olvide", "recuperar", "no me acuerdo") ->
                     "🔐 CONTRASEÑA:\n\n" +
                             "❌ OLVIDÉ MI CONTRASEÑA:\n\n" +
                             "1️⃣ En la pantalla de LOGIN, pulsa 'Recuperar contraseña'\n" +
@@ -327,7 +365,27 @@ class ChatbotActivity : AppCompatActivity() {
                             "⏱️ TIEMPO RECEPCIÓN EMAIL:\n" +
                             "Normalmente en menos de 5 minutos."
 
-                input.contains("registro") || input.contains("crear cuenta") || input.contains("nueva cuenta") || input.contains("como registrarse") ->
+                // ========== PERFIL / DATOS PERSONALES ==========
+                contieneAlguna("perfil", "datos personales", "telefono", "email", "usuario", "mis datos") ->
+                    "👤 TUS DATOS PERSONALES EN PERFIL:\n\n" +
+                            "📝 INFORMACIÓN QUE TENEMOS:\n" +
+                            "✅ Nombre de usuario\n" +
+                            "✅ Correo electrónico\n" +
+                            "✅ Número de teléfono\n" +
+                            "✅ Historial de reservas\n" +
+                            "✅ Información de pago\n\n" +
+                            "✏️ CÓMO ACTUALIZAR:\n" +
+                            "1. Ve a 'Perfil'\n" +
+                            "2. Busca opción de editar datos\n" +
+                            "3. Cambia lo que necesites\n" +
+                            "4. Guarda cambios\n\n" +
+                            "🔐 SEGURIDAD:\n" +
+                            "• Tus datos están encriptados\n" +
+                            "• No los compartimos sin tu consentimiento\n" +
+                            "• Cumplimos RGPD completo"
+
+                // ========== REGISTRO ==========
+                contieneAlguna("registr", "crear cuenta", "nueva cuenta", "darme de alta", "hacerse cuenta") ->
                     "📝 CÓMO REGISTRARSE:\n\n" +
                             "Si NO tienes cuenta en NexoWorkspace:\n\n" +
                             "1️⃣ EN LA PANTALLA DE LOGIN\n" +
@@ -346,7 +404,7 @@ class ChatbotActivity : AppCompatActivity() {
                             "Usa un email válido y contraseña fuerte."
 
                 // ========== NOTIFICACIONES ==========
-                input.contains("notificacion") || input.contains("avisos") || input.contains("campana") || input.contains("amarilla") || input.contains("alertas") ->
+                contieneAlguna("notificacion", "aviso", "campana", "alerta", "mensajes", "bandeja", "leidas") ->
                     "🔔 SISTEMA DE NOTIFICACIONES:\n\n" +
                             "📍 DÓNDE ESTÁ:\n" +
                             "Arriba a la derecha de la pantalla principal.\n" +
@@ -371,25 +429,9 @@ class ChatbotActivity : AppCompatActivity() {
                             "• Borrar TODAS las notificaciones\n\n" +
                             "💡 El admin puede contactarte directamente."
 
-                input.contains("marcar como leida") || input.contains("leidas") || input.contains("borrar notificacion") ->
-                    "🔔 GESTIONAR NOTIFICACIONES:\n\n" +
-                            "📌 PARA UNA NOTIFICACIÓN INDIVIDUAL:\n" +
-                            "1. Pulsa sobre la notificación\n" +
-                            "2. Verás dos opciones:\n" +
-                            "   ✅ Marcar como leída\n" +
-                            "   🗑️ Borrar\n" +
-                            "3. Elige la acción que prefieras\n\n" +
-                            "⚙️ PARA TODAS LAS NOTIFICACIONES:\n" +
-                            "1. Ve al menú de notificaciones (campana amarilla)\n" +
-                            "2. Pulsa los 3 PUNTOS VERTICALES (arriba a la derecha)\n" +
-                            "3. Verás dos opciones:\n" +
-                            "   ✅ Marcar TODAS como leídas\n" +
-                            "   🗑️ Borrar TODAS\n" +
-                            "4. Elige la acción\n\n" +
-                            "💡 Perfecto para limpiar tu centro de notificaciones."
-
-                // ========== CONTACTO ==========
-                input.contains("como os contacto") || input.contains("contacto") || input.contains("telefono") || input.contains("email") || input.contains("llamar") || input.contains("escribir") ->
+                // ========== CONTACTO / SOPORTE TÉCNICO ==========
+                (contieneAlguna("problem", "error", "falla", "no funcion", "ayuda tecnica") && contieneAlguna("cuenta", "app", "aplicacion", "pago")) ||
+                        contieneAlguna("contact", "telefon", "llamar", "escribir", "correo", "hablar", "soport", "admin", "administrador") ->
                     "☎️ FORMAS DE CONTACTO CON NEXOWORKSPACE:\n\n" +
                             "📞 TELÉFONO:\n" +
                             "690 773 398\n" +
@@ -406,89 +448,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "⏱️ HORARIO ATENCIÓN:\n" +
                             "Lunes a viernes (08:00-22:00)"
 
-                input.contains("menu") && input.contains("puntos") || input.contains("tres puntos") || input.contains("sobre nosotros") || input.contains("informacion sobre nosotros") ->
-                    "⚙️ MENÚ DE 3 PUNTOS EN PERFIL:\n\n" +
-                            "📍 DÓNDE ESTÁ:\n" +
-                            "En la pestaña 'Perfil', arriba a la derecha.\n" +
-                            "Verás 3 puntos verticales (⋮).\n\n" +
-                            "🎯 QUÉ ENCONTRAS:\n\n" +
-                            "1️⃣ CONTACTO\n" +
-                            "Formulario para enviar correos\n" +
-                            "Email: nexoworkspace@gmail.com\n" +
-                            "Teléfono: 690 773 398\n\n" +
-                            "2️⃣ SOBRE NOSOTROS\n" +
-                            "Información completa sobre NexoWorkspace:\n" +
-                            "• ¿Quiénes somos?\n" +
-                            "• Nuestra misión\n" +
-                            "• Por qué elegirnos\n" +
-                            "• Valores de NexoWorkspace\n" +
-                            "• Ubicación y detalles\n\n" +
-                            "💡 Ambas opciones tienen información importante."
-
-                input.contains("donde puedo contactar") || input.contains("donde os puedo escribir") || input.contains("desde la app") ->
-                    "📞 CONTACTA CON NUESTRO EQUIPO:\n\n" +
-                            "☎️ TELÉFONO:\n" +
-                            "690 773 398\n" +
-                            "(Lunes-viernes, 08:00-22:00)\n\n" +
-                            "📧 EMAIL:\n" +
-                            "nexoworkspace@gmail.com\n" +
-                            "(Respuesta en 24-48 horas)\n\n" +
-                            "📱 O DESDE LA APP:\n" +
-                            "Perfil > Menú (3 puntos) > Contacto\n\n" +
-                            "💡 TAMBIÉN PUEDO AYUDARTE CON:\n" +
-                            "• Cómo reservar\n" +
-                            "• Información de salas\n" +
-                            "• Preguntas sobre pagos\n" +
-                            "• Problemas técnicos\n" +
-                            "• Ubicación\n\n" +
-                            "¿Hay algo más que quieras saber?"
-
-                input.contains("como busco informacion") || input.contains("donde busco informacion") || input.contains("donde encuentro la informacion") || input.contains("información sobre nosotros") ->
-                    "🔍 CÓMO ENCONTRAR INFORMACIÓN SOBRE NEXOWORKSPACE:\n\n" +
-                            "📍 UBICACIÓN:\n" +
-                            "En la pestaña 'Perfil' > Menú (3 puntos) > 'Sobre Nosotros'\n\n" +
-                            "📋 QUÉ ENCONTRARÁS:\n" +
-                            "✅ ¿Quiénes somos?\n" +
-                            "   Descripción de NexoWorkspace\n\n" +
-                            "✅ Nuestra misión\n" +
-                            "   Qué nos impulsa\n\n" +
-                            "✅ Por qué elegirnos\n" +
-                            "   Nuestras ventajas\n\n" +
-                            "✅ Valores de la empresa\n" +
-                            "   Lo que nos define\n\n" +
-                            "✅ Ubicación e infraestructura\n" +
-                            "   Dónde estamos y qué ofrecemos\n\n" +
-                            "🎯 PASOS:\n" +
-                            "1. Abre el menú inferior\n" +
-                            "2. Pulsa 'Perfil'\n" +
-                            "3. Arriba a la derecha, 3 puntos (⋮)\n" +
-                            "4. Selecciona 'Sobre Nosotros'\n" +
-                            "5. ¡Lee toda nuestra información!"
-
-                // ========== MIS RESERVAS ==========
-                input.contains("mis reservas") || input.contains("donde veo") || input.contains("historial") ->
-                    "📋 PESTAÑA 'MIS RESERVAS':\n\n" +
-                            "📍 CÓMO ACCEDER:\n" +
-                            "1. En el menú inferior, pulsa 'Mis Reservas'\n" +
-                            "2. Verás todas tus reservas\n\n" +
-                            "📊 QUÉ VES:\n" +
-                            "✅ Lista de TODAS tus reservas\n" +
-                            "✅ Estado de cada una\n" +
-                            "✅ Sala reservada\n" +
-                            "✅ Fecha y hora\n" +
-                            "✅ Precio\n" +
-                            "✅ Extras añadidos\n\n" +
-                            "🎯 BOTONES DISPONIBLES:\n" +
-                            "✏️ EDITAR: Cambia fecha, hora, sala, extras\n" +
-                            "🗑️ BORRAR: Cancela la reserva\n\n" +
-                            "📱 CÓDIGO QR:\n" +
-                            "10 minutos ANTES de tu reserva, aparecerá el código QR para validar tu cita.\n\n" +
-                            "💡 INFORMACIÓN DETALLADA:\n" +
-                            "• Pulsa en cualquier reserva para ver todos los detalles\n" +
-                            "• Descarga factura desde aquí"
-
-                // ========== INFORMACIÓN GENERAL ==========
-                input.contains("quienes sois") || input.contains("que es nexo") || input.contains("sobre nosotros") || input.contains("quién eres") ->
+                // ========== QUIENES SOMOS / INFO EMPRESA ==========
+                contieneAlguna("quienes sois", "que es nexo", "sobre nosotros", "quién eres", "empresa", "para que sirve", "proposito", "informacion sobre", "menu", "tres puntos") ->
                     "🏢 SOBRE NEXOWORKSPACE:\n\n" +
                             "NexoWorkspace es el epicentro de la productividad en la zona sur de Madrid. Ubicados en el corazón de Leganés, hemos diseñado cada rincón para que emprendedores, startups y equipos creativos encuentren su lugar de trabajo ideal.\n\n" +
                             "🎯 NUESTRA MISIÓN:\n" +
@@ -501,23 +462,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "✅ Ubicación estratégica en Leganés\n\n" +
                             "💡 Para más info: Perfil > Menú (3 puntos) > Sobre Nosotros"
 
-                input.contains("que puedo hacer aqui") || input.contains("para que sirve") || input.contains("cual es el proposito") ->
-                    "🎯 ¿QUÉ PUEDES HACER EN NEXOWORKSPACE?\n\n" +
-                            "✅ TRABAJAR ENFOCADO\n" +
-                            "Escritorios y cabinas para concentración máxima.\n\n" +
-                            "✅ REUNIONES CON CLIENTES\n" +
-                            "Salas de reuniones profesionales y equipadas.\n\n" +
-                            "✅ TRABAJO EN EQUIPO\n" +
-                            "Estudios y aulas para colaboración grupal.\n\n" +
-                            "✅ FORMACIONES Y TALLERES\n" +
-                            "Aulas con capacidad para múltiples personas.\n\n" +
-                            "✅ NETWORKING\n" +
-                            "Comunidad activa de profesionales y emprendedores.\n\n" +
-                            "✅ VIDEOCONFERENCIAS\n" +
-                            "WiFi ultrarrápido y equipo de audio profesional.\n\n" +
-                            "Todo reservable por horas, 100% flexible."
-
-                input.contains("hola") || input.contains("buenos") || input.contains("hi") ->
+                // ========== SALUDOS ==========
+                contieneAlguna("hola", "buenas", "hi", "buenos dias", "buenas tardes", "saludos") ->
                     "👋 ¡Hola! Soy NexoBot, el asistente de soporte de NexoWorkspace.\n\n" +
                             "¿En qué puedo ayudarte?\n\n" +
                             "💡 PREGUNTAS MÁS FRECUENTES:\n" +
@@ -528,7 +474,8 @@ class ChatbotActivity : AppCompatActivity() {
                             "• Contacto y ubicación\n" +
                             "• Problemas técnicos"
 
-                input.contains("ayuda") || input.contains("menu") || input.contains("opciones") || input.contains("que puedes hacer") ->
+                // ========== AYUDA / MENÚ ==========
+                contieneAlguna("ayuda", "opciones", "que puedes hacer", "que sabes hacer", "socorro") ->
                     "📋 ¿EN QUÉ PUEDO AYUDARTE?\n\n" +
                             "🔹 RESERVAS & SALAS:\n" +
                             "• Cómo hacer una reserva\n" +
@@ -559,24 +506,17 @@ class ChatbotActivity : AppCompatActivity() {
                             "• Cómo encontrar información\n\n" +
                             "¿Qué te interesa?"
 
-                else -> "🤔 Entiendo tu pregunta, pero no tengo una respuesta específica para eso.\n\n" +
-                        "Pero puedo ayudarte con:\n" +
-                        "✅ Cómo hacer una reserva\n" +
-                        "✅ Información de salas\n" +
-                        "✅ Preguntas sobre pagos\n" +
-                        "✅ Gestión de tu perfil\n" +
-                        "✅ Problemas técnicos\n" +
-                        "✅ Contacto y ubicación\n\n" +
-                        "📞 CONTACTA CON NUESTRO EQUIPO:\n\n" +
-                        "☎️ TELÉFONO:\n" +
-                        "690 773 398\n" +
-                        "(Lunes-viernes, 08:00-22:00)\n\n" +
-                        "📧 EMAIL:\n" +
-                        "nexoworkspace@gmail.com\n" +
-                        "(Respuesta en 24-48 horas)\n\n" +
-                        "📱 O DESDE LA APP:\n" +
-                        "Perfil > Menú (3 puntos) > Contacto\n\n" +
-                        "¿Hay algo más que quieras saber?"
+                // ========== DEFAULT (Si escribe algo completamente incomprensible) ==========
+                else -> "🤔 Entiendo tu pregunta, pero no tengo una respuesta exacta para esas palabras.\n\n" +
+                        "Prueba a preguntármelo de otra forma, por ejemplo:\n" +
+                        "✅ '¿Cómo hago una reserva?'\n" +
+                        "✅ '¿Qué incluyen las salas?'\n" +
+                        "✅ '¿Cómo cancelo?'\n" +
+                        "✅ 'Teléfono de contacto'\n\n" +
+                        "📞 SI NECESITAS HABLAR CON UN HUMANO:\n" +
+                        "☎️ 690 773 398\n" +
+                        "📧 nexoworkspace@gmail.com\n\n" +
+                        "¿Hay algo más en lo que pueda intentar ayudarte?"
             }
             enviarMensajeBot(respuesta)
         }, 500)

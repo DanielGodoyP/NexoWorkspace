@@ -9,7 +9,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.text.HtmlCompat
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Locale
+import java.util.TimeZone
 
 class EditarReservaActivity : AppCompatActivity() {
 
@@ -196,10 +198,25 @@ class EditarReservaActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // --- NUEVA VALIDACIÓN: HORARIO DE APERTURA (08:00 a 22:00) ---
+            // --- VALIDACIÓN: HORARIO DE APERTURA (08:00 a 22:00) ---
             if (minInicioNuevo < 480 || minFinNuevo > 1320) {
                 Toast.makeText(this, "⏳ El horario del coworking es de 08:00 a 22:00. Ajusta tus horas.", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
+            }
+
+            // --- VALIDACIÓN: NO RESERVAR EN EL PASADO (Si es el mismo día) ---
+            val zonaEspana = TimeZone.getTimeZone("Europe/Madrid")
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            sdf.timeZone = zonaEspana
+            val hoyStr = sdf.format(Calendar.getInstance(zonaEspana).time)
+
+            if (fechaSeleccionada == hoyStr) {
+                val calAhora = Calendar.getInstance(zonaEspana)
+                val minAhora = calAhora.get(Calendar.HOUR_OF_DAY) * 60 + calAhora.get(Calendar.MINUTE)
+                if (minInicioNuevo <= minAhora) {
+                    Toast.makeText(this, "⏳ No puedes reservar en una hora que ya ha pasado", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
             }
 
             btnGuardar.isEnabled = false
