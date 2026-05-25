@@ -13,6 +13,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.firebase.firestore.FirebaseFirestore
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class GestionCatalogoActivity : AppCompatActivity() {
 
@@ -138,11 +141,18 @@ class GestionCatalogoActivity : AppCompatActivity() {
     }
 
     private fun publicarNotificacion(titulo: String, mensaje: String) {
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val fechaFormateada = sdf.format(Date())
+
         val nuevaNotificacion = hashMapOf(
             "titulo" to titulo,
             "mensaje" to mensaje,
+            "tipo" to "Global",
+            "destinatario" to "todos",
+            "fecha" to fechaFormateada,
             "fechaMillis" to System.currentTimeMillis(),
-            "leidaPor" to emptyList<String>()
+            "leidaPor" to emptyList<String>(),
+            "borradaPor" to emptyList<String>()
         )
         db.collection("notificaciones").add(nuevaNotificacion)
     }
